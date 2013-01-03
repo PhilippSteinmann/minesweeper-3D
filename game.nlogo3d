@@ -1,326 +1,90 @@
 globals
 [
-  hero ;the turtle from which we're gonna see the world
-  hero-height ;how high up from the ground
-  hero-depth ;how quickly we bump into walls
+  color-scheme
+  color-schemes
+  color-scheme-names
   
-  hypo-turtle ;hypothetical turtle, used to test hero movements in reporter within-boundaries?
-  
-  direction-moving ;"W" or "A" or "S" or "D"
-  distance-to-move ;so we know when to stop moving. how much is left.
-  time-to-move ;how long it takes to finish moving when you press "W" once
-  moving-speed ;how much the hero needs to move during each frame. calculated in procedures W,A,S, and D.
-  
-  direction-looking ;"l" or "r"
-  distance-to-look ;so we know when to stop rotating. how much is left.
-  time-to-look ;how long it takes to finish rotating when you press "," or "." once
-  looking-speed ;how much the hero needs to rotate during each frame. calculated in procedure look
-  
-  direction-jumping ;"up "or "down
-  distance-to-jump ;so we know when to stop jumping. how much is left.
-  time-to-jump ;how long it takes to jump from ground to apex or fall from apex to groumd.
-  jumping-speed ;how much the hero needs to jump/fall during each frame. calculated in procedure hero-jump
-  jumping-height ;the height of the jumping apex
-  
-  pause-time ;how much we wait. framerate = 1 / pause-time
-  time-before ;used to calculate the actual framerate in procedure go.
-  current-framerate ;calculated in procedure calculate-framerate, displayed in monitor "FPS"
+  cube-dimension
+  neg-border
+  pos-border
 ]
 
-patches-own [pbreed] ;used when we need to interact with "bricks" or "lava" only.
+patches-own
+[
+  pbreed 
+  bomb?
+]
 
-to startup 
-  setup ;setup runs when you open the program
+to startup
+  setup
 end
 
 to setup
   ca
-  reset-timer ;timer is used to calculate actual framerate
-  ;I broke setup into smaller subprocedures. 
-  create-ground 
-  create-walls 
-  set-constants ;set the global variables
-  create-hero
-  create-hypo-turtle ;hypothetical turtle, used to test hero movements in reporter within-boundaries?
-  ride hero ;we're now seeing everything from the hero's perspective. changes this to 'follow hero' for 3rd person
+  set-constants
+  create-color-schemes
+  draw-cube
+  set-perspective
 end
 
-to go
-  move-hero-horiz ;when you press WASD
-  move-heros-head ;when you press ',' or '.'. Rotation, basically.
-  move-hero-vertical ;when you press '/' (jumping)
-  calculate-framerate ;calculate variable current-framerate
-  wait pause-time 
-end
-
-to create-ground
- ask patches with [pycor = min-pycor] ;The ones at the bottom
- [
-   let the_color random 12 
-   ifelse the_color <= 3 
-   [
-     set pcolor one-of [22 23] ;25% orange
-   ] 
-   [
-     ifelse the_color = 4 
-     [
-       set pcolor one-of [43 44] ;8.5% yellow
-     ]
-     [
-       set pcolor one-of [12 13 14 15] ;58% red
-     ]
-   ]
- ]
-end
-
-to create-walls
-  ask patches with [abs pxcor > max-pxcor - 2 or abs pzcor > max-pzcor - 2] ;at the edges
-  [
-    set pbreed "brick" ;used to direct commands toward 'em
-    let the_color random 10
-    ifelse the_color <= 4 
-    [
-      set pcolor (random 14) * 10 + ((random 11) * .10) ;50% very dark or black
-      ;(random 14) * 10    <-- always black. ex: 0, 10, 20, 30
-      ;((random 11) * .10) <-- [0.0, 1.0]
-      ;(random 14) * 10 + ((random 11) * .10) <-- a very dark color, or black
-    ]
-    [
-      ifelse the_color = 10 
-      [
-        set pcolor ((random 14) + 1) * 10 - 0.1 + ((random 11) * .10) ;10% very bright or white
-        ;((random 14) + 1) * 10 - 0.1   <-- always white ex: 9.9, 19.9, 29.9
-        ;((random 11) * .10)            <-- [0,1]
-        ;(random 14) + 1) * 10 - 0.1 + ((random 11) * .10) <-- a very bright color, or white
-      ] 
-      [
-        set pcolor (random 5) + 1 ;40% grey
-      ]
-    ]
-  ]
-end
-
-;see globals[] for documentation
 to set-constants
-  set hero-height 4
-  set hero-depth 4
+  set color-scheme 2
   
-  set time-to-look 0.1
-  set time-to-move 0.1
-  set time-to-jump 0.1
-  set jumping-height 1.5
+  set cube-dimension 5
+  set neg-border -2
+  set pos-border 2
+end
+
+to create-color-schemes
+  set color-schemes []
+  set color-scheme-names []
   
-  set pause-time 0.04 ;25 FPS
+  new-color-scheme "vegetable" task [ 50 + (random 21) ]
+  new-color-scheme "iron man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
+  new-color-scheme "ham" task [ 133 + random 6 ]
 end
 
-to create-hero
-  cro 1
-  [
-     set hero self
-     set pitch 270 ;face straight.
-     set ycor min-pycor + hero-height ;hero is hero-height above the ground
-     set color white ;so we can find him when viewing from the outside
-  ]
+to-report in-perimeter?
+  report  pxcor >= neg-border and pxcor <= pos-border and
+          pycor >= neg-border and pycor <= pos-border and
+          pzcor >= neg-border and pzcor <= pos-border 
 end
 
-;see documentation in globals[]
-to create-hypo-turtle
-  cro 1
-  [
-    set hypo-turtle self
-    set hidden? true
-  ]
+to new-color-scheme [scheme-name generator]
+  set color-schemes lput generator color-schemes
+  set color-scheme-names lput scheme-name color-scheme-names
 end
 
-;forward, back, left, or right
-to move-hero-horiz
-  ask hero
+to draw-cube
+  ask patches with [in-perimeter?]
   [
-    if distance-to-move > 0 and within-boundaries? 
+    set pbreed "field"
+    set bomb? false
+    if random 125 = 10
     [
-      ifelse direction-moving = "W" 
-      [
-        fd moving-speed
-        set distance-to-move (distance-to-move - moving-speed) ;now distance left to move is less. eventually <= 0
-      ]
-      [
-        ifelse direction-moving = "S" 
-        [
-          bk moving-speed
-          set distance-to-move (distance-to-move - moving-speed)
-        ]
-        [
-          ifelse direction-moving = "A"
-          [
-            rt -90
-            fd moving-speed
-            rt 90
-            set distance-to-move (distance-to-move - moving-speed)
-          ]
-          [
-            if direction-moving = "D"
-            [
-              rt 90
-              fd moving-speed
-              rt -90
-              set distance-to-move (distance-to-move - moving-speed) 
-            ]
-          ] 
-        ]
-      ]
+      set bomb? true 
     ]
+    set pcolor runresult item color-scheme color-schemes 
   ]
 end
 
-;looking left or right
-to move-heros-head
-  ask hero
+to set-perspective
+  reset-perspective
+  repeat 300
   [
-    if distance-to-look > 0 
-    [
-       ifelse direction-looking = "left"
-       [
-         lt looking-speed
-         set distance-to-look (distance-to-look - looking-speed)
-       ]
-       [
-          if direction-looking = "right"
-          [
-             rt looking-speed
-             set distance-to-look (distance-to-look - looking-speed)
-          ] 
-       ] 
-    ]   
-  ]  
-end
-
-;jumping
-to move-hero-vertical
-  ask hero
-  [
-    ifelse direction-jumping = "up" 
-    [
-      ifelse distance-to-jump > 0
-      [
-        set ycor ycor + jumping-speed
-        set distance-to-jump (distance-to-jump - jumping-speed)
-      ]
-      ;we've reached the apex
-      [
-        set direction-jumping "down"
-        set distance-to-jump jumping-height
-      ]
-    ]
-    [
-      if direction-jumping = "down" and distance-to-jump > 0
-      [
-         set ycor ycor - jumping-speed
-         set distance-to-jump (distance-to-jump - jumping-speed)
-      ]
-    ]
-  ]  
-end
-
-to calculate-framerate
-  let now timer
-  set current-framerate 1 / (now - time-before)
-  set time-before now
-end
-  
-
-to-report within-boundaries?
-  let report-value false ;the value reported at the end
-  ask hypo-turtle
-  [
-    ;replicate the hero's circumstances
-    setxyz ([xcor] of hero) ([ycor] of hero) ([zcor] of hero)
-    set roll [roll] of hero
-    set pitch [pitch] of hero
-    set heading [heading] of hero
-    
-    ;do what the hero would do if he moved    
-    ifelse direction-moving = "W"
-    [
-      fd moving-speed
-    ]
-    [
-      ifelse direction-moving = "S" 
-      [
-        bk moving-speed
-      ]
-      [
-        ifelse direction-moving = "A" 
-        [
-          rt -90
-          fd moving-speed
-          rt 90
-         ]
-         [
-           if direction-moving = "D" 
-           [
-             rt 90
-             fd moving-speed
-             rt -90
-            ]
-          ] 
-        ]
-      ]
-    ;if there any patches closer than hero-depth, then the hero shouldn't be allowed to move.
-    set report-value not any? patches with [pbreed = "brick" and distance hypo-turtle <= hero-depth]
-  ]
-  report report-value
-end
-
-to W
-  set direction-moving "W"
-  set distance-to-move 2
-  set moving-speed distance-to-move / (time-to-move / pause-time)
-  ;time-to-move / pause-time = how many frames it will take to move
-  ;distance-to-move / how many frames = how much moved each frame
-end
-
-to A
-  set direction-moving "A"
-  set distance-to-move 1
-  set moving-speed distance-to-move / (time-to-move / pause-time)
-end
-
-to S
-  set direction-moving "S"
-  set distance-to-move 1
-  set moving-speed distance-to-move / (time-to-move / pause-time)
-end
- 
-to D
-  set direction-moving "D"
-  set distance-to-move 1
-  set moving-speed distance-to-move / (time-to-move / pause-time)
-end 
-
-to look [direction]
-  set direction-looking direction
-  set distance-to-look 6
-  set looking-speed distance-to-look / (time-to-look / pause-time)
-end
-
-to hero-jump
-  ;we have to check that we're not already jumping
-  if direction-jumping != "up" and distance-to-jump <= 0
-  [
-    set direction-jumping "up"
-    set distance-to-jump jumping-height
-    set jumping-speed distance-to-jump / (time-to-jump / pause-time)
+    orbit-up 45 / 300
+    zoom 45 / 300
+    wait 0.01
   ]
 end
-   
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
 0
-647
-200
-24
-6
+439
+460
+16
+16
 13.0
 1
 10
@@ -331,212 +95,31 @@ GRAPHICS-WINDOW
 1
 1
 1
--24
-24
--6
-6
--24
-24
+-16
+16
+-16
+16
+-16
+16
 1
 0
-0
+1
 ticks
 30.0
 
 BUTTON
-61
-54
-197
-87
-Setup Environment
+71
+55
+161
+88
+New Game
 setup
 NIL
 1
 T
 OBSERVER
 NIL
-E
-NIL
-NIL
-1
-
-BUTTON
-61
-94
-200
-127
-Go!
-go
-T
-1
-T
-OBSERVER
-NIL
-G
-NIL
-NIL
-1
-
-BUTTON
-121
-185
-205
-218
-W
-W
-NIL
-1
-T
-OBSERVER
-NIL
-W
-NIL
-NIL
-1
-
-BUTTON
-120
-218
-206
-251
-S
-S
-NIL
-1
-T
-OBSERVER
-NIL
-S
-NIL
-NIL
-1
-
-BUTTON
-206
-218
-284
-251
-D
-D
-NIL
-1
-T
-OBSERVER
-NIL
-D
-NIL
-NIL
-1
-
-BUTTON
-57
-218
-120
-251
-A
-A
-NIL
-1
-T
-OBSERVER
-NIL
-A
-NIL
-NIL
-1
-
-BUTTON
-66
-370
-236
-403
-Outside Perspective
-reset-perspective\norbit-up 40\nzoom 30\norbit-up 0
-NIL
-1
-T
-OBSERVER
-NIL
-O
-NIL
-NIL
-1
-
-BUTTON
-66
-327
-236
-360
-Hero Perspective
-ride hero
-NIL
-1
-T
-OBSERVER
-NIL
-H
-NIL
-NIL
-1
-
-BUTTON
-317
-179
-399
-251
-Look Left
-look \"left\"
-NIL
-1
-T
-OBSERVER
-NIL
-,
-NIL
-NIL
-1
-
-BUTTON
-400
-179
-489
-251
-Look Right
-look \"right\"
-NIL
-1
-T
-OBSERVER
-NIL
-.
-NIL
-NIL
-1
-
-MONITOR
-272
-335
-341
-388
-FPS
-current-framerate
-1
-1
-13
-
-BUTTON
-58
-262
-492
-295
-Jump
-hero-jump
-NIL
-1
-T
-OBSERVER
-NIL
-/
+N
 NIL
 NIL
 1
