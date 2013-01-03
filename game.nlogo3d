@@ -7,6 +7,8 @@ globals
   cube-dimension
   neg-border
   pos-border
+  
+  pause-time
 ]
 
 patches-own
@@ -28,11 +30,13 @@ to setup
 end
 
 to set-constants
-  set color-scheme 2
+  set color-scheme 0
   
   set cube-dimension 5
   set neg-border -2
   set pos-border 2
+  
+  set pause-time 0.01
 end
 
 to create-color-schemes
@@ -69,11 +73,13 @@ to draw-cube
 end
 
 to set-perspective
+  let seconds-for-intro 3
+  let num-frames seconds-for-intro / pause-time
   reset-perspective
-  repeat 300
+  repeat num-frames
   [
-    orbit-up 45 / 300
-    zoom 45 / 300
+    orbit-up 45 / num-frames 
+    zoom 45 / num-frames
     wait 0.01
   ]
 end
