@@ -9,6 +9,9 @@ globals
   pos-border
   
   pause-time
+  frames-until-color
+  
+  field-selected
 ]
 
 patches-own
@@ -29,6 +32,11 @@ to setup
   set-perspective
 end
 
+to go
+  color-selected-field
+  wait 0.02
+end
+
 to set-constants
   set color-scheme 0
   
@@ -36,7 +44,9 @@ to set-constants
   set neg-border -2
   set pos-border 2
   
-  set pause-time 0.01
+  set field-selected [0 2 2]
+  
+  set pause-time 0.02
 end
 
 to create-color-schemes
@@ -59,12 +69,29 @@ to new-color-scheme [scheme-name generator]
   set color-scheme-names lput scheme-name color-scheme-names
 end
 
+to color-selected-field 
+  let refresh-per-second 2
+  let frames-inbetween (1 / refresh-per-second) / pause-time
+  
+  ifelse frames-until-color < frames-inbetween 
+  [
+    set frames-until-color frames-until-color + 1
+  ]
+  [
+    set frames-until-color 0
+    ask patch item 0 field-selected item 1 field-selected item 2 field-selected
+    [
+      set pcolor random (13) * 10 + 5
+    ]
+  ]
+end
+
 to draw-cube
   ask patches with [in-perimeter?]
   [
     set pbreed "field"
     set bomb? false
-    if random 125 = 10
+    if random 125 <= 10
     [
       set bomb? true 
     ]
@@ -73,16 +100,18 @@ to draw-cube
 end
 
 to set-perspective
-  let seconds-for-intro 3
-  let num-frames seconds-for-intro / pause-time
+  let intro-length 2.51
+  let num-frames intro-length / pause-time
   reset-perspective
-  repeat num-frames
+  repeat num-frames 
   [
     orbit-up 45 / num-frames 
-    zoom 45 / num-frames
-    wait 0.01
+    zoom 45 / num-frames 
+    wait pause-time
   ]
 end
+
+to 
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
@@ -111,7 +140,7 @@ GRAPHICS-WINDOW
 0
 1
 ticks
-30.0
+50.0
 
 BUTTON
 71
@@ -126,6 +155,74 @@ T
 OBSERVER
 NIL
 N
+NIL
+NIL
+1
+
+BUTTON
+71
+100
+163
+133
+Go
+go
+T
+1
+T
+OBSERVER
+NIL
+G
+NIL
+NIL
+1
+
+BUTTON
+93
+177
+156
+210
+w
+w
+NIL
+1
+T
+OBSERVER
+NIL
+W
+NIL
+NIL
+1
+
+BUTTON
+27
+227
+90
+260
+A
+a
+NIL
+1
+T
+OBSERVER
+NIL
+A
+NIL
+NIL
+1
+
+BUTTON
+104
+236
+167
+269
+S
+s
+NIL
+1
+T
+OBSERVER
+NIL
+S
 NIL
 NIL
 1
@@ -473,7 +570,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 3D 5.0.2
+NetLogo 3D 5.0.3
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
