@@ -1,0 +1,101 @@
+globals
+[
+  color-scheme
+  color-schemes
+  color-scheme-names
+]
+
+
+breed [cursors_breed cursor_breed]
+cursors_breed-own 
+[
+  pulsation-direction 
+  pulsation-up-time 
+  each-step-up
+  pulsation-down-time 
+  each-step-down
+  
+  selected-patch
+  selected-patch-original-color
+  selected-patch-current-color
+]
+
+to create-color-schemes
+  set color-schemes []
+  set color-scheme-names []
+
+  new-color-scheme "vegetable" task [ 50 + (random 21) ]
+  new-color-scheme "iron man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
+  new-color-scheme "ham" task [ 133 + random 6 ]
+  new-color-scheme "christmas" task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
+end
+
+to new-color-scheme [scheme-name generator]
+  set color-schemes lput generator color-schemes
+  set color-scheme-names lput scheme-name color-scheme-names
+end
+
+to precalculate-pulsations
+  set color black
+  set pulsation-direction "up"
+  set pulsation-up-time 0.2
+  set pulsation-down-time 0.6
+  
+  let frames-up   pulsation-up-time / pause-time
+  set each-step-up  4.9 / frames-up
+    
+  let frames-down pulsation-down-time / pause-time
+  set each-step-down 4.9 / frames-down
+  
+  set selected-patch min-one-of patches with [pbreed = "field"] [ distance cursor ]   
+  set selected-patch-original-color [pcolor] of selected-patch
+  ask selected-patch
+  [
+    set pcolor (random 14) * 10  + 3
+  ]
+end
+
+to pulsate-cursor-color 
+  ask cursor
+  [
+    let selected-color [pcolor] of selected-patch
+    let color-string (word selected-color)
+    let dot-position 0
+    set dot-position position "." color-string
+  
+    ifelse pulsation-direction = "up"
+    [
+      ifelse dot-position != false and ((item (dot-position - 1) (word (selected-color + each-step-up))) = "0" or (item (dot-position - 1) (word (selected-color + each-step-up))) = "1")
+          
+      [
+        set selected-color (selected-color + 10)
+        set pulsation-direction "down" 
+      ]
+      [
+        set selected-color (selected-color + each-step-up)
+      ]
+    ] 
+    [
+       ifelse dot-position != false and item (dot-position - 1) (word (selected-color - each-step-down)) = "2"
+       [
+         set pulsation-direction "up" 
+       ]
+       [
+         set selected-color (selected-color - each-step-down)
+       ]
+    ]
+    ask selected-patch
+    [
+      set pcolor selected-color
+    ]
+  ]
+end
+
+to restore-old-pcolor
+  set selected-patch-current-color [pcolor] of selected-patch
+  let old-pcolor selected-patch-original-color 
+  ask selected-patch
+  [
+    set pcolor old-pcolor
+  ]
+end

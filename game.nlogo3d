@@ -1,19 +1,15 @@
+__includes ["colors.nls"]
+
 globals
 [
-  color-scheme
-  color-schemes
-  color-scheme-names
-  
   cube-dimension
   neg-border
   pos-border
   
   pause-time
-  frames-until-color
   
   cursor
 ]
-
 
 patches-own
 [
@@ -21,10 +17,6 @@ patches-own
   pbreed 
   bomb?
 ]
-
-to startup
-  setup
-end
 
 to setup
   ca
@@ -35,20 +27,9 @@ to setup
   create-cursor 
 end
 
-to create-cursor
-  cro 1
-  [
-     set size 0.8
-     set cursor self
-     setxyz 0 pos-border + 0.6 pos-border
-     set pitch -90
-     set shape "arrow" 
-  ]
-end
-
 to go
-  cycle-cursor-color
-  wait 0.02
+  pulsate-cursor-color
+  wait pause-time
 end
 
 to set-constants
@@ -60,43 +41,10 @@ to set-constants
   
   set pause-time 0.02
 end
-
-to create-color-schemes
-  set color-schemes []
-  set color-scheme-names []
-  
-  new-color-scheme "vegetable" task [ 50 + (random 21) ]
-  new-color-scheme "iron man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
-  new-color-scheme "ham" task [ 133 + random 6 ]
-  new-color-scheme "christmas" task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
-end
-
 to-report in-perimeter?
   report  pxcor >= neg-border and pxcor <= pos-border and
           pycor >= neg-border and pycor <= pos-border and
           pzcor >= neg-border and pzcor <= pos-border 
-end
-
-to new-color-scheme [scheme-name generator]
-  set color-schemes lput generator color-schemes
-  set color-scheme-names lput scheme-name color-scheme-names
-end
-
-to cycle-cursor-color 
-  let refresh-per-second 2
-  let frames-inbetween (1 / refresh-per-second) / pause-time
-  
-  ifelse frames-until-color < frames-inbetween 
-  [
-    set frames-until-color frames-until-color + 1
-  ]
-  [
-    set frames-until-color 0
-    ask cursor 
-    [
-      set color random (13) * 10 + 5
-    ]
-  ]
 end
 
 to draw-cube
@@ -122,6 +70,48 @@ to set-perspective
     orbit-up 45 / num-frames 
     zoom 45 / num-frames 
     wait pause-time
+  ]
+end
+
+to create-cursor
+  cro 1
+  [
+     set cursor self     
+     set size 0.8
+     set pitch -90
+     setxyz 0 pos-border + 0.6 pos-border
+     
+     set breed cursors_breed
+     precalculate-pulsations
+     
+     set shape "arrow"
+  ]
+end
+
+to W
+  ask cursor
+  [
+    if xcor + 1 >= pos-border or xcor - 1 <= neg-border or
+       ycor + 1 >= pos-border or ycor - 1 <= neg-border or
+       zcor + 1 >= pos-border or zcor - 1 <= neg-border
+     [
+       
+     ]
+    restore-old-pcolor
+    fd 1
+    change-selected-patch
+  ]
+end
+
+to change-selected-patch
+  set selected-patch
+  min-one-of patches with [pbreed = "field"] [ distance cursor ]   
+  set selected-patch-original-color [pcolor] of selected-patch
+  
+  let init-color selected-patch-current-color
+  ask selected-patch
+  [
+    set pcolor init-color
   ]
 end
 @#$#@#$#@
