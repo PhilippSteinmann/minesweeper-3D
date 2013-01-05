@@ -41,7 +41,8 @@ to create-cursor
      set size 0.8
      set cursor self
      setxyz 0 pos-border + 0.6 pos-border
-     set pitch -90 
+     set pitch -90
+     set shape "arrow" 
   ]
 end
 
@@ -91,8 +92,9 @@ to cycle-cursor-color
   ]
   [
     set frames-until-color 0
-    ask cursor [
-      set pcolor random (13) * 10 + 5
+    ask cursor 
+    [
+      set color random (13) * 10 + 5
     ]
   ]
 end
@@ -112,7 +114,7 @@ end
 
 to set-perspective
   facexyz 0 0 0
-  let intro-length 2.51
+  let intro-length 2
   let num-frames intro-length / pause-time
   reset-perspective
   repeat num-frames 
@@ -187,12 +189,12 @@ NIL
 1
 
 BUTTON
-93
+94
 177
-156
+157
 210
-w
-w
+W
+W
 NIL
 1
 T
@@ -204,12 +206,12 @@ NIL
 1
 
 BUTTON
-27
-227
-90
-260
+32
+210
+95
+243
 A
-a
+A
 NIL
 1
 T
@@ -221,18 +223,35 @@ NIL
 1
 
 BUTTON
-104
-236
-167
-269
+94
+210
+157
+243
 S
-s
+S
 NIL
 1
 T
 OBSERVER
 NIL
 S
+NIL
+NIL
+1
+
+BUTTON
+157
+210
+220
+243
+D
+D
+NIL
+1
+T
+OBSERVER
+NIL
+D
 NIL
 NIL
 1
@@ -580,7 +599,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 3D 5.0.3
+NetLogo 3D 5.0.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
