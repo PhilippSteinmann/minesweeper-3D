@@ -1,4 +1,4 @@
-__includes ["colors.nls"]
+__includes ["cursor.nls"]
 
 globals
 [
@@ -9,11 +9,16 @@ globals
   pause-time
   
   cursor
+  cursor-doppelgaenger
+  
+  
+  color-scheme
+  color-schemes
+  color-scheme-names
 ]
 
 patches-own
 [
-  
   pbreed 
   bomb?
 ]
@@ -41,14 +46,24 @@ to set-constants
   
   set pause-time 0.02
 end
-to-report in-perimeter?
-  report  pxcor >= neg-border and pxcor <= pos-border and
-          pycor >= neg-border and pycor <= pos-border and
-          pzcor >= neg-border and pzcor <= pos-border 
+
+to create-color-schemes
+  set color-schemes []
+  set color-scheme-names []
+
+  new-color-scheme "vegetable" task [ 50 + (random 21) ]
+  new-color-scheme "iron man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
+  new-color-scheme "ham" task [ 133 + random 6 ]
+  new-color-scheme "christmas" task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
+end
+
+to new-color-scheme [scheme-name generator]
+  set color-schemes lput generator color-schemes
+  set color-scheme-names lput scheme-name color-scheme-names
 end
 
 to draw-cube
-  ask patches with [in-perimeter?]
+  ask patches with [part-of-cube?]
   [
     set pbreed "field"
     set bomb? false
@@ -73,46 +88,10 @@ to set-perspective
   ]
 end
 
-to create-cursor
-  cro 1
-  [
-     set cursor self     
-     set size 0.8
-     set pitch -90
-     setxyz 0 pos-border + 0.6 pos-border
-     
-     set breed cursors_breed
-     precalculate-pulsations
-     
-     set shape "arrow"
-  ]
-end
-
-to W
-  ask cursor
-  [
-    if xcor + 1 >= pos-border or xcor - 1 <= neg-border or
-       ycor + 1 >= pos-border or ycor - 1 <= neg-border or
-       zcor + 1 >= pos-border or zcor - 1 <= neg-border
-     [
-       
-     ]
-    restore-old-pcolor
-    fd 1
-    change-selected-patch
-  ]
-end
-
-to change-selected-patch
-  set selected-patch
-  min-one-of patches with [pbreed = "field"] [ distance cursor ]   
-  set selected-patch-original-color [pcolor] of selected-patch
-  
-  let init-color selected-patch-current-color
-  ask selected-patch
-  [
-    set pcolor init-color
-  ]
+to-report part-of-cube?
+  report  pxcor >= neg-border and pxcor <= pos-border and
+          pycor >= neg-border and pycor <= pos-border and
+          pzcor >= neg-border and pzcor <= pos-border 
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -181,9 +160,9 @@ NIL
 BUTTON
 94
 177
-157
-210
-W
+150
+211
+▲
 W
 NIL
 1
@@ -196,11 +175,11 @@ NIL
 1
 
 BUTTON
-32
+39
 210
 95
-243
-A
+244
+◄
 A
 NIL
 1
@@ -215,9 +194,9 @@ NIL
 BUTTON
 94
 210
-157
-243
-S
+150
+244
+▼
 S
 NIL
 1
@@ -230,11 +209,11 @@ NIL
 1
 
 BUTTON
-157
+150
 210
-220
-243
-D
+206
+244
+►
 D
 NIL
 1

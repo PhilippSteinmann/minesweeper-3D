@@ -1,11 +1,3 @@
-globals
-[
-  color-scheme
-  color-schemes
-  color-scheme-names
-]
-
-
 breed [cursors_breed cursor_breed]
 cursors_breed-own 
 [
@@ -18,24 +10,29 @@ cursors_breed-own
   selected-patch
   selected-patch-original-color
   selected-patch-current-color
+  
+  distance-from-cube
 ]
 
-to create-color-schemes
-  set color-schemes []
-  set color-scheme-names []
 
-  new-color-scheme "vegetable" task [ 50 + (random 21) ]
-  new-color-scheme "iron man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
-  new-color-scheme "ham" task [ 133 + random 6 ]
-  new-color-scheme "christmas" task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
+to create-cursor
+  cro 1
+  [
+     set cursor self     
+     set breed cursors_breed
+     set size 0.8
+     set pitch -90
+     set shape "arrow"
+
+     set distance-from-cube 0.6
+     setxyz 0 pos-border + distance-from-cube pos-border
+     set-own-variables
+  ]
+  
+  create-cursor-doppelgaenger
 end
 
-to new-color-scheme [scheme-name generator]
-  set color-schemes lput generator color-schemes
-  set color-scheme-names lput scheme-name color-scheme-names
-end
-
-to precalculate-pulsations
+to set-own-variables
   set color black
   set pulsation-direction "up"
   set pulsation-up-time 0.2
@@ -52,6 +49,14 @@ to precalculate-pulsations
   ask selected-patch
   [
     set pcolor (random 14) * 10  + 3
+  ]
+end
+
+to create-cursor-doppelgaenger
+  cro 1
+  [
+    set cursor-doppelgaenger self
+    set hidden? true 
   ]
 end
 
@@ -98,4 +103,141 @@ to restore-old-pcolor
   [
     set pcolor old-pcolor
   ]
+end
+
+to change-selected-patch
+  set selected-patch
+  min-one-of patches with [pbreed = "field"] [ distance cursor ]   
+  set selected-patch-original-color [pcolor] of selected-patch
+  
+  let init-color selected-patch-current-color
+  ask selected-patch
+  [
+    set pcolor init-color
+  ]
+end
+
+to W
+  let move-task task [fd 1]
+  let wrap-task task [set pitch pitch - 90]
+  
+  ask cursor
+  [
+    restore-old-pcolor
+    
+    let has-to-wrap? false
+    if wrap-around-cube? move-task task [zcor > pos-border + [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor + distance-from-cube
+      set zcor zcor + distance-from-cube
+    ]
+    
+    if wrap-around-cube? move-task task [zcor < neg-border - [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor - distance-from-cube
+      set zcor zcor - distance-from-cube 
+    ]
+    
+    if wrap-around-cube? move-task task [ycor > pos-border + [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor + distance-from-cube
+      set zcor zcor - distance-from-cube 
+    ]
+    
+    if wrap-around-cube? move-task task [ycor < neg-border - [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor - distance-from-cube
+      set zcor zcor + distance-from-cube 
+    ] 
+    
+    ifelse has-to-wrap?
+    [
+      run wrap-task
+    ]
+    [
+      run move-task  
+    ]
+    
+    change-selected-patch
+  ]
+end
+
+to A
+  if (ycor = pos-border + [distance-from-cube] of cursor) or (ycor = neg-border - [distance-from-cube] of cursor)
+  [
+    let move-task task [lt 90 fd 1 rt 90]
+  ]
+  if (xcor = pos-border + [distance-from-cube] of cursor) or (xcor = neg-border - [distance-from-cube] of cursor)
+  [
+    let move-task task [lt 90 fd 1 rt 90]    
+  ]
+ let wrap-task task [set roll roll + 90]
+  
+  ask cursor
+  [
+    restore-old-pcolor
+    
+    let has-to-wrap? false
+    if wrap-around-cube? move-task task [xcor > pos-border + [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor + distance-from-cube
+      set xcor xcor + distance-from-cube
+    ]
+    
+    if wrap-around-cube? move-task task [xcor < neg-border - [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor - distance-from-cube
+      set xcor xcor - distance-from-cube 
+    ]
+    
+    if wrap-around-cube? move-task task [ycor > pos-border + [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor + distance-from-cube
+      set zcor zcor - distance-from-cube 
+    ]
+    
+    if wrap-around-cube? move-task task [ycor < neg-border - [distance-from-cube] of cursor]
+    [
+      set has-to-wrap? true
+      set ycor ycor - distance-from-cube
+      set zcor zcor + distance-from-cube 
+    ] 
+    
+    print has-to-wrap?
+    
+    ifelse has-to-wrap?
+    [
+      run wrap-task
+    ]
+    [
+      run move-task  
+    ]
+    
+    change-selected-patch
+  ]
+end
+
+to-report wrap-around-cube? [move-task condition]
+  let report-value false
+  ask cursor-doppelgaenger
+  [
+     set heading [heading] of cursor
+     set pitch [pitch] of cursor
+     set roll [roll] of cursor
+     setxyz [xcor] of cursor [ycor] of cursor [zcor] of cursor
+     run move-task
+     
+     if runresult condition
+     [
+       set report-value true      
+     ]
+  ]
+  report report-value 
 end
