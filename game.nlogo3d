@@ -183,176 +183,43 @@ to redraw-cubes
   ]
 end
 
-to W
+to move [x-increase y-increase z-increase]
   let old-pxcor [pxcor] of selected-patch
   let old-pycor [pycor] of selected-patch
   let old-pzcor [pzcor] of selected-patch
   let current-pcolor[pcolor] of selected-patch
   restore-original-pcolor
   
-  ask selected-patch
-  [
-    if pzcor = neg-border
-    [
-      set w-mode [0 -1 0] 
-    ]
-    
-    if pycor = neg-border
-    [
-      set w-mode [0 0 1]
-    ]
-    
-    if pzcor = pos-border and item 2 w-mode = 1
-    [
-      set w-mode [0 1 0]
-    ]
-    
-    if pycor = pos-border and item 1 w-mode = 1
-    [
-      set w-mode [0 0 -1]
-    ]
-  ]
-  
-  
-  let pxcor-increase item 0 w-mode
-  let pycor-increase item 1 w-mode
-  let pzcor-increase item 2 w-mode
-  
-  set selected-patch patch (old-pxcor + pxcor-increase) (old-pycor + pycor-increase) (old-pzcor + pzcor-increase)
-  if [cleared?] of selected-patch = true
-  [
-    set selected-patch patch (old-pxcor) (old-pycor) (old-pzcor)
-  ]
+  set selected-patch patch (old-pxcor + x-increase) (old-pycor + y-increase) (old-pzcor + z-increase)
+;  if [cleared?] of selected-patch = true
+;  [
+;    set selected-patch patch (old-pxcor) (old-pycor) (old-pzcor)
+;  ]
   set-new-pcolor current-pcolor
 end
 
-to S
-  let old-pxcor [pxcor] of selected-patch
-  let old-pycor [pycor] of selected-patch
-  let old-pzcor [pzcor] of selected-patch
-  let current-pcolor[pcolor] of selected-patch
-  restore-original-pcolor
-  
-  ask selected-patch
-  [
-    if pzcor = neg-border and item 2 s-mode = -1
-    [
-      set s-mode [0 1 0] 
-    ]
-    
-    if pycor = neg-border and item 1 s-mode = -1
-    [
-      set s-mode [0 0 -1]
-    ]
-    
-    if pzcor = pos-border and item 2 s-mode = 1
-    [
-      set s-mode [0 -1 0]
-    ]
-    
-    if pycor = pos-border and item 1 s-mode = 1
-    [
-      set s-mode [0 0 1]
-    ]
-  ]
-  
-  
-  let pxcor-increase item 0 s-mode
-  let pycor-increase item 1 s-mode
-  let pzcor-increase item 2 s-mode
-  
-  set selected-patch patch (old-pxcor + pxcor-increase) (old-pycor + pycor-increase) (old-pzcor + pzcor-increase)
-  if [cleared?] of selected-patch = true
-  [
-    set selected-patch patch (old-pxcor) (old-pycor) (old-pzcor)
-  ]
-  set-new-pcolor current-pcolor
+to move-forward
+  move 0 0 -1
 end
 
-to A
-  let old-pxcor [pxcor] of selected-patch
-  let old-pycor [pycor] of selected-patch
-  let old-pzcor [pzcor] of selected-patch
-  let current-pcolor[pcolor] of selected-patch
-  restore-original-pcolor
-  
-  ask selected-patch
-  [
-    if pxcor = neg-border and item 0 a-mode = -1
-    [
-      set a-mode [0 -1 0] 
-    ]
-    
-    if pycor = neg-border and item 1 a-mode = -1
-    [
-      set a-mode [1 0 0]
-    ]
-    
-    if pxcor = pos-border and item 0 a-mode = 1
-    [
-      set a-mode [0 1 0]
-    ]
-    
-    if pycor = pos-border and item 1 a-mode = 1
-    [
-      set a-mode [-1 0 0]
-    ]
-  ]
-  
-  
-  let pxcor-increase item 0 a-mode
-  let pycor-increase item 1 a-mode
-  let pzcor-increase item 2 a-mode
-  
-  set selected-patch patch (old-pxcor + pxcor-increase) (old-pycor + pycor-increase) (old-pzcor + pzcor-increase)
-  if [cleared?] of selected-patch = true
-  [
-    set selected-patch patch (old-pxcor) (old-pycor) (old-pzcor)
-  ]
-  set-new-pcolor current-pcolor
+to move-back
+  move 0 0 1
 end
 
-to D
-  let old-pxcor [pxcor] of selected-patch
-  let old-pycor [pycor] of selected-patch
-  let old-pzcor [pzcor] of selected-patch
-  let current-pcolor[pcolor] of selected-patch
-  restore-original-pcolor
-  
-  ask selected-patch
-  [
-    if pxcor = neg-border and item 0 d-mode = -1
-    [
-      set d-mode [0 1 0] 
-    ]
-    
-    if pycor = neg-border and item 1 d-mode = -1
-    [
-      set d-mode [-1 0 0]
-    ]
-    
-    if pxcor = pos-border and item 0 d-mode = 1
-    [
-      set d-mode [0 -1 0]
-    ]
-    
-    if pycor = pos-border and item 1 d-mode = 1
-    [
-      set d-mode [1 0 0]
-    ]
-  ]
-  
-  
-  let pxcor-increase item 0 d-mode
-  let pycor-increase item 1 d-mode
-  let pzcor-increase item 2 d-mode
-  
-  set selected-patch patch (old-pxcor + pxcor-increase) (old-pycor + pycor-increase) (old-pzcor + pzcor-increase)
-  if [cleared?] of selected-patch = true
-  [
-    set selected-patch patch (old-pxcor) (old-pycor) (old-pzcor)
-  ]
-  set-new-pcolor current-pcolor
+to move-left
+  move -1 0 0
+end
+
+to move-right
+  move 1 0 0
+end
+
+to move-up
+  move 0 1 0
+end
+
+to move-down
+  move 0 -1 0
 end
 
 to restore-original-pcolor
@@ -452,10 +319,10 @@ ticks
 50.0
 
 BUTTON
-71
-55
-161
-88
+39
+49
+129
+82
 New Game
 setup
 NIL
@@ -469,11 +336,11 @@ NIL
 1
 
 BUTTON
-71
-100
-163
-133
-Go
+38
+92
+130
+125
+Play
 go
 T
 1
@@ -490,8 +357,8 @@ BUTTON
 177
 150
 211
-▲
-W
+FWD
+move-forward\n
 NIL
 1
 T
@@ -507,8 +374,8 @@ BUTTON
 210
 95
 244
-◄
-A
+LEFT
+move-left\n
 NIL
 1
 T
@@ -524,8 +391,8 @@ BUTTON
 210
 150
 244
-▼
-S
+BACK
+move-back\n
 NIL
 1
 T
@@ -539,10 +406,10 @@ NIL
 BUTTON
 150
 210
-206
+217
 244
-►
-D
+RIGHT
+move-right
 NIL
 1
 T
@@ -555,9 +422,9 @@ NIL
 
 BUTTON
 38
-258
+261
 133
-291
+294
 Not a Bomb
 clear-patch
 NIL
@@ -571,10 +438,10 @@ NIL
 1
 
 BUTTON
-133
-258
-242
-291
+132
+261
+241
+294
 That's a Bomb
 label-as-bomb
 NIL
@@ -588,25 +455,59 @@ NIL
 1
 
 CHOOSER
-266
-300
-404
-345
+40
+346
+178
+391
 color-scheme
 color-scheme
 0 1 2 3
-2
+0
 
 MONITOR
-267
-357
-423
-422
+189
+331
+345
+392
 Color Scheme 
 item color-scheme color-scheme-names
 17
 1
-16
+15
+
+BUTTON
+248
+179
+311
+212
+↑
+move-up
+NIL
+1
+T
+OBSERVER
+NIL
+Q
+NIL
+NIL
+1
+
+BUTTON
+248
+212
+311
+245
+↓
+move-down
+NIL
+1
+T
+OBSERVER
+NIL
+E
+NIL
+NIL
+1
 
 @#$#@#$#@
 #Minesweeper 3D
