@@ -60,7 +60,6 @@ to go
 end
 
 to set-constants
-  set color-scheme 0
   set color-scheme-of-previous-frame color-scheme
   
   set cube-dimension 5
@@ -105,6 +104,7 @@ to create-color-schemes
   new-color-scheme "Iron Man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
   new-color-scheme "Ham" task [ 133 + random 6 ]
   new-color-scheme "Christmas" task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
+  new-color-scheme "Patriot" task [one-of (list (red + (random 2) - 1) (blue + (random 2) - 1) (white))]
 end
 
 to new-color-scheme [scheme-name generator]
@@ -491,9 +491,9 @@ NIL
 BUTTON
 132
 261
-241
+243
 294
-That's a Bomb
+Label As Bomb
 label-as-bomb
 NIL
 1
@@ -512,7 +512,7 @@ CHOOSER
 391
 color-scheme
 color-scheme
-0 1 2 3
+0 1 2 3 4
 0
 
 MONITOR
@@ -565,18 +565,30 @@ NIL
 [Fork Me On Github](https://github.com/PhilippSteinmann/netlogo-3d-game)
 
 ## WHAT IS IT?
+
 This is a game of 3D Minesweeper. There are landmines hidden within the various boxes that comprise the giant cube that you see on your screen.
+
 ## HOW IT WORKS
+
 Selecting a cube using the "Not A Bomb" button will cause a number to appear. That number will tell you how many adjacent mines there are in the selected patch's neighboring cubes.
 If you happen to select a box that contains a landmine, you lose the game.
 The game is won when all the safe boxes have been revealed and only the boxes containing landmines are left.
+
 ## HOW TO USE IT
+
 To set up a new game, press the "New Game" button so that the field will be reset and mines will be rescattered across the playing field.
+
 After setting up the field, you can begin playing by pressing the "Go" button.
-You should notice one cube in particular will begin to flash and blink slowly. This is the selected cube. To select a different cube, press the W, A, S, or D keys to select a new cube above, to the left of, to the right of, or below the currently selected cube, respectively.
+You should notice one cube in particular will begin to flash and blink slowly. This is the selected cube. To select a different cube, press the "W", "A", "S", or "D" keys to select a new cube above, to the left of, to the right of, or below the currently selected cube, respectively. 
+
+Take note that the "W", "A", "S", "D" buttons only work in changing directions in the x-axis and z-axis. To change direction in the y-axis, two additional buttons, the "Up" and "Down" keys, are there for that purpose. 
+
 The "Not a Bomb" button is the button that allows the player to select a cube and make it disappear, leaving a number in its place that will indicate how many adjacent mines there are in the selected patch's neighboring cubes.
-The "That's A Bomb" button will allow the player to mark a cube as potentially containing a bomb, so that the player will not accidentally open that cube and lose the game.
+The "Label as Bomb" button will allow the player to mark a cube as potentially containing a bomb, so that the player will not accidentally open that cube and lose the game.
+
 The "Color Scheme" chooser allows the player to select a color scheme for the general playing field.
+
+
 ## LICENSE
 3D Minesweeper Implementation in Netlogo. 
 Copyright (C) 2013 Edmond Loi & Philipp Steinmann
