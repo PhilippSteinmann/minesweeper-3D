@@ -17,10 +17,13 @@ globals
   selected-patch-original-color
   
   pulsation-direction 
-  pulsation-up-time 
   each-step-up
-  pulsation-down-time 
   each-step-down
+  
+  bomb-pulsation-direction 
+  bomb-each-step-up
+  bomb-each-step-down
+  bomb-pulsation-current-color
   
   w-mode
   s-mode
@@ -37,6 +40,7 @@ patches-own
   bomb?
   labeled-as-bomb?
   cleared?
+  
 ]
 
 to setup
@@ -49,6 +53,7 @@ end
 
 to go
   pulsate-selected-patch
+  pulsate-bombs
   check-for-color-scheme-change
   check-game-state
   wait pause-time
@@ -67,14 +72,21 @@ to set-constants
   set selected-patch patch 0 2 2 
   
   set pulsation-direction "up"
-  set pulsation-up-time 0.2
-  set pulsation-down-time 0.6
-  
+  let pulsation-up-time 0.2
+  let pulsation-down-time 0.6
   let frames-up   pulsation-up-time / pause-time
   set each-step-up  4.9 / frames-up
-    
   let frames-down pulsation-down-time / pause-time
   set each-step-down 4.9 / frames-down
+  
+  set bomb-pulsation-direction "up"
+  set bomb-pulsation-current-color red
+  let bomb-up-time 1.2
+  let bomb-down-time 0.4
+  let bomb-frames-up   bomb-up-time / pause-time
+  set bomb-each-step-up  4.9 / bomb-frames-up
+  let bomb-frames-down bomb-down-time / pause-time
+  set bomb-each-step-down 4.9 / bomb-frames-down
   
   set w-mode [0 0 -1]
   set s-mode [0 -1 0]
@@ -157,13 +169,43 @@ to pulsate-selected-patch
       ]
     ] 
     [
-       ifelse dot-position != false and item (dot-position - 1) (word (pcolor - each-step-down)) = "2"
-       [
-         set pulsation-direction "up" 
-       ]
-       [
-         set pcolor (pcolor - each-step-down)
-       ]
+      ifelse dot-position != false and item (dot-position - 1) (word (pcolor - each-step-down)) = "2"
+      [
+        set pulsation-direction "up" 
+      ]
+      [
+        set pcolor (pcolor - each-step-down)
+      ]
+    ]
+  ]
+end
+
+to pulsate-bombs
+  if any? patches with [labeled-as-bomb? = true]
+  [
+    ask one-of patches with [labeled-as-bomb? = true]
+    [
+      ifelse pcolor <= 10.5
+      [
+        set bomb-pulsation-direction "down" 
+      ]
+      [ 
+        if pcolor >= 15
+        [
+          set bomb-pulsation-direction "up" 
+        ]
+      ]
+      ifelse bomb-pulsation-direction = "up"
+      [
+        set bomb-pulsation-current-color (bomb-pulsation-current-color - bomb-each-step-up)
+      ]
+      [
+        set bomb-pulsation-current-color (bomb-pulsation-current-color + bomb-each-step-down)
+      ]
+    ]
+    ask patches with [labeled-as-bomb? = true and self != selected-patch]
+    [
+      set pcolor bomb-pulsation-current-color
     ]
   ]
 end
@@ -187,15 +229,21 @@ to move [x-increase y-increase z-increase]
   let old-pxcor [pxcor] of selected-patch
   let old-pycor [pycor] of selected-patch
   let old-pzcor [pzcor] of selected-patch
-  let current-pcolor[pcolor] of selected-patch
-  restore-original-pcolor
   
-  set selected-patch patch (old-pxcor + x-increase) (old-pycor + y-increase) (old-pzcor + z-increase)
-;  if [cleared?] of selected-patch = true
-;  [
-;    set selected-patch patch (old-pxcor) (old-pycor) (old-pzcor)
-;  ]
-  set-new-pcolor current-pcolor
+  let new-pxcor old-pxcor + x-increase
+  let new-pycor old-pycor + y-increase
+  let new-pzcor old-pzcor + z-increase
+  let candidate patch new-pxcor new-pycor new-pzcor
+
+  
+  if [pbreed] of candidate = "field" and [visible?] of candidate and not [cleared?] of candidate
+  [
+    let current-pcolor[pcolor] of selected-patch
+    restore-original-pcolor
+  
+    set selected-patch patch new-pxcor new-pycor new-pzcor
+    set-new-pcolor current-pcolor
+  ]
 end
 
 to move-forward
@@ -251,7 +299,7 @@ to clear-patch
       set cleared? true
       set plabel count neighbors with [bomb? = true]
       
-      if count patches with [pbreed = "field" and cleared? = false and labeled-as-bomb? = false] = 124
+      if count patches with [pbreed = "field" and cleared? = false] = 124
       [
         ask neighbors with [pbreed = "field" and cleared? = false and labeled-as-bomb? = false]
         [
@@ -262,19 +310,22 @@ to clear-patch
       ]
     ]
   ]
-  set selected-patch one-of patches with [pbreed = "field" and cleared? = false]
+  set selected-patch one-of patches with [pbreed = "field" and cleared? = false and visible? = true]
 end
 
 to label-as-bomb
   ask selected-patch
   [
     set labeled-as-bomb? true 
-    set pcolor red
+    if self != selected-patch
+    [
+      set pcolor red
+    ]
   ]
 end
 
 to-report visible?
-  report count neighbors6 with [pbreed = "field" and cleared? = false and labeled-as-bomb? = false] > 0
+  report count neighbors6 with [pbreed != "field" or cleared? = true] > 0
 end
 
 to check-game-state
@@ -478,9 +529,9 @@ item color-scheme color-scheme-names
 BUTTON
 248
 179
-311
+317
 212
-↑
+UP
 move-up
 NIL
 1
@@ -495,9 +546,9 @@ NIL
 BUTTON
 248
 212
-311
+317
 245
-↓
+DOWN
 move-down
 NIL
 1
