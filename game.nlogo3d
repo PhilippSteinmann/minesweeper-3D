@@ -8,6 +8,7 @@ globals
   pos-border
   
   pause-time
+  intro-length
   
   color-schemes
   color-scheme-names
@@ -25,11 +26,6 @@ globals
   bomb-each-step-down
   bomb-pulsation-current-color
   
-  w-mode
-  s-mode
-  a-mode
-  d-mode
-  
   num-bombs
   game-over?
 ]
@@ -40,7 +36,7 @@ patches-own
   bomb?
   labeled-as-bomb?
   cleared?
-  
+  original-pcolor
 ]
 
 to setup
@@ -48,6 +44,7 @@ to setup
   set-constants
   create-color-schemes
   draw-cube
+  set-selected-patch 0 2 2
   set-perspective
 end
 
@@ -55,7 +52,10 @@ to go
   pulsate-selected-patch
   pulsate-bombs
   check-for-color-scheme-change
-  check-game-state
+  if game-over?
+  [
+    stop 
+  ]
   wait pause-time
 end
 
@@ -67,15 +67,14 @@ to set-constants
   set pos-border 2
   
   set pause-time 0.02
-  
-  set selected-patch patch 0 2 2 
+  set intro-length 2
   
   set pulsation-direction "up"
   let pulsation-up-time 0.2
   let pulsation-down-time 0.6
   let frames-up   pulsation-up-time / pause-time
-  set each-step-up  4.9 / frames-up
   let frames-down pulsation-down-time / pause-time
+  set each-step-up  4.9 / frames-up  
   set each-step-down 4.9 / frames-down
   
   set bomb-pulsation-direction "up"
@@ -83,14 +82,9 @@ to set-constants
   let bomb-up-time 1.2
   let bomb-down-time 0.4
   let bomb-frames-up   bomb-up-time / pause-time
-  set bomb-each-step-up  4.9 / bomb-frames-up
   let bomb-frames-down bomb-down-time / pause-time
+  set bomb-each-step-up  4.9 / bomb-frames-up  
   set bomb-each-step-down 4.9 / bomb-frames-down
-  
-  set w-mode [0 0 -1]
-  set s-mode [0 -1 0]
-  set a-mode [-1 0 0]
-  set d-mode [1 0 0]
   
   set num-bombs 10
   set game-over? false
@@ -100,11 +94,16 @@ to create-color-schemes
   set color-schemes []
   set color-scheme-names []
 
-  new-color-scheme "Vegetable" task [ 50 + (random 21) ]
-  new-color-scheme "Iron Man" task [ one-of (list (red - random 3) (yellow - random 3) ) ]
-  new-color-scheme "Ham" task [ 133 + random 6 ]
-  new-color-scheme "Christmas" task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
-  new-color-scheme "Patriot" task [one-of (list (red + (random 2) - 1) (blue + (random 2) - 1) (white))]
+  new-color-scheme "Vegetable" 
+                    task [ 50 + (random 21) ]
+  new-color-scheme "Iron Man" 
+                    task [ one-of (list (red - random 3) (yellow - random 3) ) ]
+  new-color-scheme "Ham" 
+                    task [ 133 + random 6 ]
+  new-color-scheme "Christmas" 
+                    task [ one-of (list (12 + (random 4) ) (62 + (random 4))) ]
+  new-color-scheme "Patriot" 
+                    task [one-of (list (red + (random 2) - 1) (blue + (random 2) - 1) (white))]
 end
 
 to new-color-scheme [scheme-name generator]
@@ -119,17 +118,24 @@ to draw-cube
     set bomb? false
     set cleared? false
     set labeled-as-bomb? false
+    set pcolor runresult item color-scheme color-schemes    
     if random 125 <= num-bombs
     [
       set bomb? true 
-    ]
-    set pcolor runresult item color-scheme color-schemes 
+    ] 
+  ]
+end
+
+to set-selected-patch [x y z]
+  set selected-patch patch x y z
+  ask selected-patch 
+  [
+    set original-pcolor pcolor
   ]
 end
 
 to set-perspective
   facexyz 0 0 0
-  let intro-length 2
   let num-frames intro-length / pause-time
   reset-perspective
   repeat num-frames 
@@ -149,32 +155,44 @@ end
 to pulsate-selected-patch
   ask selected-patch
   [
-    if selected-patch-original-color = 0
-    [
-      set selected-patch-original-color [pcolor] of selected-patch
-    ]
-    let color-string (word pcolor)
-    let dot-position 0
-    set dot-position position "." color-string
-    
     ifelse pulsation-direction = "up"
     [
-      ifelse dot-position != false and ((item (dot-position - 1) (word (pcolor + each-step-up))) = "0" or (item (dot-position - 1) (word (pcolor + each-step-up))) = "1")
+      let next-pcolor pcolor + each-step-up
+      let next-pcolor-str (word next-pcolor)
+      let dot-position position "." next-pcolor-str
+      
+      let number-before-dot false
+      if dot-position != false
+      [
+        set number-before-dot item (dot-position - 1) next-pcolor-str
+      ]     
+      
+      ifelse number-before-dot = "0" or number-before-dot = "1"
       [
         set pcolor (pcolor + 10)
         set pulsation-direction "down" 
       ]
       [
-        set pcolor (pcolor + each-step-up)
+        set pcolor next-pcolor
       ]
     ] 
     [
-      ifelse dot-position != false and item (dot-position - 1) (word (pcolor - each-step-down)) = "2"
+      let next-pcolor pcolor - each-step-down
+      let next-pcolor-str (word next-pcolor)
+      let dot-position position "." next-pcolor-str
+      
+      let number-before-dot false
+      if dot-position != false
+      [
+        set number-before-dot item (dot-position - 1) next-pcolor-str
+      ]
+      
+      ifelse number-before-dot = "2"
       [
         set pulsation-direction "up" 
       ]
       [
-        set pcolor (pcolor - each-step-down)
+        set pcolor next-pcolor
       ]
     ]
   ]
@@ -219,7 +237,7 @@ to check-for-color-scheme-change
 end
 
 to redraw-cubes
-  ask patches with [pbreed = "field" and cleared? = false]
+  ask patches with [pbreed = "field" and cleared? = false and labeled-as-bomb? = false]
   [
     set pcolor runresult item color-scheme color-schemes
   ]
@@ -235,13 +253,12 @@ to move [x-increase y-increase z-increase]
   let new-pzcor old-pzcor + z-increase
   let candidate patch new-pxcor new-pycor new-pzcor
 
-  
   if [pbreed] of candidate = "field" and [visible?] of candidate and not [cleared?] of candidate
   [
-    let current-pcolor[pcolor] of selected-patch
+    let current-pcolor [pcolor] of selected-patch
     restore-original-pcolor
   
-    set selected-patch patch new-pxcor new-pycor new-pzcor
+    set-selected-patch new-pxcor new-pycor new-pzcor
     set-new-pcolor current-pcolor
   ]
 end
@@ -273,20 +290,20 @@ end
 to restore-original-pcolor
   ask selected-patch
   [
-    set pcolor selected-patch-original-color
+    set pcolor original-pcolor
   ]
 end
 
 to set-new-pcolor [current-pcolor]
   ask selected-patch
   [
-    set selected-patch-original-color pcolor
+    set original-pcolor pcolor
     set pcolor current-pcolor
   ]
 end
 
 
-to clear-patch
+to clear-selected-patch
   ask selected-patch
   [
     ifelse bomb?
@@ -295,22 +312,33 @@ to clear-patch
       set game-over? true
     ]
     [
-      set pcolor 0
-      set cleared? true
-      set plabel count neighbors with [bomb? = true]
+      clear-patch selected-patch
       
-      if count patches with [pbreed = "field" and cleared? = false] = 124
+      if count patches with [pbreed = "field" and cleared? = false] = (cube-dimension ^ 3 - 1)
       [
         ask neighbors with [pbreed = "field" and cleared? = false and labeled-as-bomb? = false]
         [
-          set pcolor 0
-          set cleared? true
-          set plabel count neighbors with [bomb? = true]
+          clear-patch self
+          clear-patch one-of neighbors with [pbreed = "field"]
         ]
       ]
     ]
   ]
-  set selected-patch one-of patches with [pbreed = "field" and cleared? = false and visible? = true]
+  set selected-patch min-one-of patches with [pbreed = "field" and cleared? = false and visible? = true] [distance selected-patch]
+  if count turtles with [cleared? = true or (labeled-as-bomb? = true and bomb? = true)] = 125
+  [
+    user-message "You Won. Great, I guess. But once again, what's the point?"
+    set game-over? true    
+  ]
+end
+
+to clear-patch [patch-to-clear]
+  ask patch-to-clear 
+  [
+    set pcolor 0
+    set cleared? true
+    set plabel count neighbors with [bomb? = true]
+  ]
 end
 
 to label-as-bomb
@@ -326,18 +354,6 @@ end
 
 to-report visible?
   report count neighbors6 with [pbreed != "field" or cleared? = true] > 0
-end
-
-to check-game-state
-  if game-over?
-  [
-    stop 
-  ]
-  
-  if count turtles with [cleared? = true or (labeled-as-bomb? = true and bomb? = true)] = 125
-  [
-    user-message "You Won. Great, I guess. But once again, what's the point?"
-  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -370,7 +386,7 @@ ticks
 50.0
 
 BUTTON
-39
+37
 49
 129
 82
@@ -398,7 +414,7 @@ T
 T
 OBSERVER
 NIL
-G
+P
 NIL
 NIL
 1
@@ -477,7 +493,7 @@ BUTTON
 133
 294
 Not a Bomb
-clear-patch
+clear-selected-patch
 NIL
 1
 T
@@ -905,7 +921,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 3D 5.0.2
+NetLogo 3D 5.0.3
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
