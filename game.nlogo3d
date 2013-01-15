@@ -44,7 +44,7 @@ to setup
   set-constants
   create-color-schemes
   draw-cube
-  set-selected-patch 0 2 2
+  set-selected-patch patch 0 2 2
   set-perspective
 end
 
@@ -126,9 +126,9 @@ to draw-cube
   ]
 end
 
-to set-selected-patch [x y z]
-  set selected-patch patch x y z
-  ask selected-patch 
+to set-selected-patch [the-patch]
+  set selected-patch the-patch
+  ask the-patch
   [
     set original-pcolor pcolor
   ]
@@ -252,14 +252,24 @@ to move [x-increase y-increase z-increase]
   let new-pycor old-pycor + y-increase
   let new-pzcor old-pzcor + z-increase
   let candidate patch new-pxcor new-pycor new-pzcor
-
-  if [pbreed] of candidate = "field" and [visible?] of candidate and not [cleared?] of candidate
-  [
-    let current-pcolor [pcolor] of selected-patch
-    restore-original-pcolor
   
-    set-selected-patch new-pxcor new-pycor new-pzcor
-    set-new-pcolor current-pcolor
+  while [[pbreed] of candidate = "field"]
+  [
+    ifelse [visible?] of candidate and not [cleared?] of candidate
+    [
+      let current-pcolor [pcolor] of selected-patch
+      restore-original-pcolor
+    
+      set-selected-patch patch new-pxcor new-pycor new-pzcor
+      set-new-pcolor current-pcolor
+      stop
+    ]
+    [
+      set new-pxcor new-pxcor + x-increase
+      set new-pycor new-pycor + y-increase
+      set new-pzcor new-pzcor + z-increase
+      set candidate patch new-pxcor new-pycor new-pzcor
+    ]
   ]
 end
 
@@ -324,7 +334,7 @@ to clear-selected-patch
       ]
     ]
   ]
-  set selected-patch min-one-of patches with [pbreed = "field" and cleared? = false and visible? = true] [distance selected-patch]
+  set-selected-patch min-one-of patches with [pbreed = "field" and cleared? = false and visible? = true] [distance selected-patch]
   if count turtles with [cleared? = true or (labeled-as-bomb? = true and bomb? = true)] = 125
   [
     user-message "You Won. Great, I guess. But once again, what's the point?"
