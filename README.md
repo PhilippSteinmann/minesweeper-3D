@@ -1,5 +1,4 @@
 #Minesweeper 3D
-[Fork Me On Github](https://github.com/PhilippSteinmann/netlogo-3d-game)
 
 ## What Is It?
 
